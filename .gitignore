@@ -2,7 +2,8 @@
 !/Classes
 !/Properties
 !/.gitignore
-!/appsettings.*
+!/appsettings.json
+!/appsettings.Development.json
 !/LICENSE
 !/Program.cs
 !/README.md
