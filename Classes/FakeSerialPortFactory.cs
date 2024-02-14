@@ -1,20 +1,13 @@
 namespace ScaleRESTService;
 
-public class FakeSerialPortFactory : ISerialPortFactory
+public class FakeSerialPortFactory(string output) : ISerialPortFactory
 {
-    private readonly string _output;
-
-    public FakeSerialPortFactory(string output)
-    {
-        this._output = output;
-    }
-
     public ISerialPortWrapper Connect()
     {
-        return new FakeSerialPortWrapper(_output);
+        return new FakeSerialPortWrapper(output);
     }
 
-    public class FakeSerialPortWrapper : ISerialPortWrapper
+    private class FakeSerialPortWrapper : ISerialPortWrapper
     {
         private readonly string _output;
 

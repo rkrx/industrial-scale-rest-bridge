@@ -35,16 +35,15 @@ public class IniFile
     private string? Get(string section, string key)
     {
         var value = _data[section][key];
-        
-        if (value != null)
-        {
-            value = value.Trim();
-            value = IOUtils.TranslateNonvisibleCharacterPlaceholdersBack(value);
 
-            if (value.StartsWith("\"") && value.EndsWith("\""))
-            {
-                return value.Substring(1, value.Length - 2);
-            }
+        if (value == null) return value;
+        
+        value = value.Trim();
+        value = IoUtils.TranslateNonVisibleCharacterPlaceholdersBack(value);
+
+        if (value.StartsWith('"') && value.EndsWith('"'))
+        {
+            return value.Substring(1, value.Length - 2);
         }
 
         return value;

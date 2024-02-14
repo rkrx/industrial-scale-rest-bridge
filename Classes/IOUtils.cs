@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace ScaleRESTService;
 
-public class IOUtils
+public static class IoUtils
 {
     public static byte[] HexToByteArray(string hex)
     {
@@ -37,15 +37,15 @@ public class IOUtils
     /**
      * Translate placeholders of nonvisible characters back to their original form.
      */
-    public static string TranslateNonvisibleCharacterPlaceholdersBack(string input)
+    public static string TranslateNonVisibleCharacterPlaceholdersBack(string input)
     {
         if (string.IsNullOrEmpty(input))
         {
             return input;
         }
 
-        string result = "";
-        for(int i = 0; i < input.Length; i++)
+        var result = "";
+        for(var i = 0; i < input.Length; i++)
         {
             if (Substring(input, i, 2) == "\\n")
             {
@@ -72,7 +72,7 @@ public class IOUtils
                 var regexResult = Regex.Match(Substring(input, i, 4), @"^\\x([0-9A-Fa-f]{2})");
                 if (regexResult.Success)
                 {
-                    int value = Convert.ToInt32(regexResult.Groups[1].Value, 16);
+                    var value = Convert.ToInt32(regexResult.Groups[1].Value, 16);
                     result += ((char)value).ToString();
                     i += 3;
                 }
@@ -86,24 +86,20 @@ public class IOUtils
         return result;
     }
 
-    public static string FormatNonvisibleCharacters(string input)
+    public static string FormatNonVisibleCharacters(string input)
     {
-        string result = "";
-        foreach (char chr in input)
+        var result = input.Aggregate("", (current, chr) => current + char.IsControl(chr) switch
         {
-            result += char.IsControl(chr) switch
+            false => chr,
+            true => chr switch
             {
-                false => chr,
-                true => chr switch
-                {
-                    '\n' => "\\n",
-                    '\r' => "\\r",
-                    '\t' => "\\t", 
-                    '\x1B' => "\\e",
-                    _ => $"\\x{Convert.ToByte(chr):X2}"
-                }
-            };
-        }
-        return Regex.Replace(result, "[^\\x20-\\x7E]", "?");
+                '\n' => "\\n",
+                '\r' => "\\r",
+                '\t' => "\\t",
+                '\x1B' => "\\e",
+                _ => $"\\x{Convert.ToByte(chr):X2}"
+            }
+        });
+        return Regex.Replace(result, @"[^\x20-\x7E]", "?");
     }
 }

@@ -3,20 +3,11 @@ namespace ScaleRESTService;
 using System.IO.Ports;
 using System.Text;
 
-public class SerialPortFactory : ISerialPortFactory
+public class SerialPortFactory(string endOfTransmissionSequence, Func<SerialPort> factory) : ISerialPortFactory
 {
-    private readonly Func<SerialPort> _factory;
-    private readonly string _endOfTransmissionSequence;
-
-    public SerialPortFactory(string endOfTransmissionSequence, Func<SerialPort> factory)
-    {
-        _endOfTransmissionSequence = endOfTransmissionSequence;
-        _factory = factory;
-    }
-
     public ISerialPortWrapper Connect()
     {
-        return new SerialPortWrapper(_factory(), _endOfTransmissionSequence);
+        return new SerialPortWrapper(factory(), endOfTransmissionSequence);
     }
     
     private class SerialPortWrapper : IDisposable, ISerialPortWrapper
@@ -47,13 +38,10 @@ public class SerialPortFactory : ISerialPortFactory
             _serialPort.ReadExisting(); // Drain the buffer before making a new inquiry
             _serialPort.Write(code, 0, code.Length);
             var completedTask = Task.WhenAny(_result.Task, Task.Delay(timeout)).GetAwaiter().GetResult();
-            if (completedTask == _result.Task)
-            {
-                DebugWriteLine($"Response: {_result.Task.Result}");
-                return _result.Task;
-            }
+            if (completedTask != _result.Task) throw new TimeoutException();
+            DebugWriteLine($"Response: {_result.Task.Result}");
+            return _result.Task;
 
-            throw new TimeoutException();
         }
         
         public void Dispose()
@@ -63,7 +51,7 @@ public class SerialPortFactory : ISerialPortFactory
 
         private void DebugWriteLine(string output)
         {
-            Console.WriteLine(IOUtils.FormatNonvisibleCharacters(output));
+            Console.WriteLine(IoUtils.FormatNonVisibleCharacters(output));
         }
     }
 }

@@ -4,7 +4,7 @@ namespace ScaleRESTService;
 
 public class FeedbackChannel<TI, TO> : IDisposable
 {
-    private readonly BlockingCollection<RequestResponse<TI, TO>> _requestQueue = new (1);
+    private readonly BlockingCollection<RequestResponse> _requestQueue = new (1);
     
     public FeedbackChannel(Func<TI, Task<TO>> handler)
     {
@@ -26,7 +26,7 @@ public class FeedbackChannel<TI, TO> : IDisposable
 
     public Task<TO> Request(TI input, int timeoutMilliseconds)
     {
-        var requestResponse = new RequestResponse<TI, TO>(input, new TaskCompletionSource<TO>());
+        var requestResponse = new RequestResponse(input, new TaskCompletionSource<TO>());
         _requestQueue.Add(requestResponse);
         var response = requestResponse.Response.Task;
         var result = Task.WhenAny(response, Task.Delay(timeoutMilliseconds)).GetAwaiter().GetResult();
@@ -43,5 +43,5 @@ public class FeedbackChannel<TI, TO> : IDisposable
         _requestQueue.Dispose();
     }
 
-    public record RequestResponse<TI, TO>(TI Input, TaskCompletionSource<TO> Response);
+    private record RequestResponse(TI Input, TaskCompletionSource<TO> Response);
 }
