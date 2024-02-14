@@ -1,8 +1,8 @@
-# An ASP.NET Server for making a Scale available via REST
+# An ASP.NET server for exposing a scale via REST
 
 ## Configuration
 
-Create a `settings.ini` in the server-directory.
+Create a `settings.ini`-file in the root-directory.
 
 ```ini
 [service]
@@ -66,6 +66,8 @@ scale-response-eot = "\n"
 
 ## Project setup
 
+You have to install the .NET 8.0 SDK to build and run the server. You can download it from the [official website](https://dotnet.microsoft.com/download).
+
 ### Restore dependencies
 
 ```bash
@@ -81,7 +83,7 @@ dotnet run
 ### Make executable
 
 ```bash
-dotnet publish -c Release -r win10-x64 -o dist -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish -c Release -r win-x64 -o dist -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 ## Usage
