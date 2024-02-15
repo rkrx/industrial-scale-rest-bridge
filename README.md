@@ -1,5 +1,7 @@
 # An ASP.NET server for exposing a scale via REST
 
+![Scale](assets/scale.jpg)
+
 ## Configuration
 
 Create a `settings.ini`-file in the root-directory.
