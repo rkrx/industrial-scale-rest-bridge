@@ -8,26 +8,28 @@ Create a `settings.ini`-file in the root-directory.
 
 ```ini
 [service]
-; The IP-Adress+Port to listen to
-listen = http://0.0.0.0:5000
+; The IP-Adress+Port to listen to. Use `http://0.0.0.0:5000` if you want to listen non-private on all interfaces.
+listen = http://127.0.0.1:5000
 
-; Start the server in test-mode, so it always responds with 123.45 kg
+; Start the server in test-mode, so it always responds with 123.45 kg.
 test-mode = true
 
 [scale]
-; The COM-Port of the scale
+; The COM-Port of the scale. For Linux/MacOS it's something like /dev/ttyUSB0, for Windows it's like COM1. 
+; To find all available COM-ports of the local system, run the program with the `--list-comports` argument.
+; Example: `dotnet run --list-comports`
 com-port = /dev/ttyUSB0
 
-; The BAUD-Rate
+; The BAUD-Rate.
 baud-rate = 9600
 
-; The Data-Bits
+; The Data-Bits.
 data-bits = 8
 
-; The Partiy mode
+; The Partiy mode.
 parity = None
 
-; Sets a value indicating whether the Data Terminal Ready (DTR) signal is enabled.
+; Sets a value indicating whether the Data Terminal Ready (DTR) signal is enabled..
 dtr-enable = true
 
 ; Sets a value indicating whether the Request to Send (RTS) signal is enabled.
@@ -48,7 +50,7 @@ trigger-code-byte-hex = 3C524E3E0D0A
 ; marks the point, where the weight starts within the string.
 scale-response-start-index = 13
 
-; Omitting this value means "all remaining characters from the start index"
+; Omitting this value means "all remaining characters from the start index".
 scale-response-part-length = 7
 
 ; The scale normally responds with a string, that contains the weight than could have a thousands separator. This value 

@@ -4,6 +4,12 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using ScaleRESTService;
 
+if (args.Any(arg => arg == "--list-comports"))
+{
+    Console.WriteLine($"Available COM Ports: {String.Join(", ", SerialPort.GetPortNames())}");
+    return;
+}
+
 var ini = new IniFile("settings.ini");
 
 if (!Parity.TryParse(ini.Parity, out Parity parity))
