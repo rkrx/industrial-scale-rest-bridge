@@ -14,6 +14,9 @@ listen = http://127.0.0.1:5000
 ; Start the server in test-mode, so it always responds with 123.45 kg.
 test-mode = true
 
+; Set the response when in test mode
+test-mode-response = "<000001.01.0000:02   11    2.32    0.00    2.32kg     1   28244>\r\n"
+
 [scale]
 ; The COM-Port of the scale. For Linux/MacOS it's something like /dev/ttyUSB0, for Windows it's like COM1. 
 ; To find all available COM-ports of the local system, run the program with the `--list-comports` argument.
