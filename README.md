@@ -18,7 +18,7 @@ test-mode = true
 test-mode-response = "<000001.01.0000:02   11    2.32    0.00    2.32kg     1   28244>\r\n"
 
 [scale]
-; The COM-Port of the scale. For Linux/MacOS it's something like /dev/ttyUSB0, for Windows it's like COM1. 
+; The COM-Port of the scale. For Linux/MacOS it's something like /dev/ttyUSB0, for Windows it's like COM1.
 ; To find all available COM-ports of the local system, run the program with the `--list-comports` argument.
 ; Example: `dotnet run --list-comports`
 com-port = /dev/ttyUSB0
@@ -40,7 +40,7 @@ rts-enable = true
 
 ; Sets the handshaking protocol for serial port transmission of data.
 ; - None (No control for the transmission is used)
-; - XOnXOff (Software control for transmission is used, the XON character is sent to resume transmission and the XOFF 
+; - XOnXOff (Software control for transmission is used, the XON character is sent to resume transmission and the XOFF
 ;    character to halt transmission)
 ; - RequestToSend (The serial port transmission uses the Request-to-Send (RTS) hardware control line)
 ; - RequestToSendXOnXOff (Both XOnXOff and RequestToSend controls are used)
@@ -51,18 +51,18 @@ trigger-code-byte-hex = 3C524E3E0D0A
 
 ; The scale normally responds with a string, that contains the weight in either gram or kilogram. This index value
 ; marks the point, where the weight starts within the string.
-scale-response-start-index = 13
+scale-response-start-index = 39
 
 ; Omitting this value means "all remaining characters from the start index".
-scale-response-part-length = 7
+scale-response-part-length = 8
 
-; The scale normally responds with a string, that contains the weight than could have a thousands separator. This value 
+; The scale normally responds with a string, that contains the weight than could have a thousands separator. This value
 ; indicates the thousands separator, which is then removed from the string.
-scale-response-thousands-separator = .
+scale-response-thousands-separator = ,
 
 ; The scale normally responds with a string, that contains the weight than could have a decimal separator other than
 ; a dot. This value is used to replace the decimal separator, that comes from the scale, with a dot.
-scale-response-decimal-separator = ,
+scale-response-decimal-separator = .
 
 ; Can be kilogram, gram, carat, oz, lg or lbs. Default is kilogram.
 scale-response-unit = kilogram
