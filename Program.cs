@@ -3,6 +3,7 @@ using System.IO.Ports;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using ScaleRESTService;
+using System.IO;
 
 if (args.Any(arg => arg == "--list-comports"))
 {
@@ -72,6 +73,62 @@ var requestCode = IoUtils.HexToByteArray(ini.RequestCodeHex);
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
+TextWriter? logWriter = null;
+if (ini.LogToFile != null) {
+    logWriter = new StreamWriter(ini.LogToFile, true);
+}
+
+// Middleware to log requests and responses
+app.Use(async (context, next) => {
+    var requestPath = context.Request.Path;
+    var requestMethod = context.Request.Method;
+    var requestTime = DateTime.Now;
+    var requestMessage = $"[{requestTime:yyyy-MM-dd HH:mm:ss}] {requestMethod} {requestPath}";
+    
+    if (ini.LogToConsole) {
+        Console.WriteLine(requestMessage);
+    }
+    
+    // Log request to file if configured
+    logWriter?.WriteLine(requestMessage);
+    logWriter?.Flush();
+    
+    // Capture the original body stream
+    var originalBodyStream = context.Response.Body;
+    
+    try {
+        // Create a new memory stream to capture the response
+        using var responseBody = new MemoryStream();
+        context.Response.Body = responseBody;
+        
+        // Continue processing the request
+        await next.Invoke();
+        
+        // Read the response body
+        responseBody.Seek(0, SeekOrigin.Begin);
+        var responseText = await new StreamReader(responseBody).ReadToEndAsync();
+        responseBody.Seek(0, SeekOrigin.Begin);
+        
+        var responseTime = DateTime.Now;
+        var statusCode = context.Response.StatusCode;
+        var responseMessage = $"[{responseTime:yyyy-MM-dd HH:mm:ss}] Response {statusCode}: {responseText}";
+        
+        if (ini.LogToConsole) {
+            Console.WriteLine(responseMessage);
+        }
+        
+        // Log response to file if configured
+        logWriter?.WriteLine(responseMessage);
+        logWriter?.Flush();
+        
+        // Copy the captured response to the original stream
+        await responseBody.CopyToAsync(originalBodyStream);
+    } finally {
+        // Restore the original stream
+        context.Response.Body = originalBodyStream;
+    }
+});
+
 app.MapGet("/current-weight/kg", async (HttpContext context) =>
 {
     try
@@ -91,3 +148,5 @@ app.MapGet("/current-weight/kg", async (HttpContext context) =>
 app.Urls.Add(ini.ListenToUrl);
 
 app.Run();
+
+logWriter?.Dispose();

@@ -24,6 +24,10 @@ public class IniFile
     public string ResponseUnit => Get("scale", "scale-response-unit", "kilogram");
     public string ResponseEndOfTransmission => Get("scale", "scale-response-eot", "\n");
 
+    // Logging section properties
+    public bool LogToConsole => IsLoggingEnabled("console");
+    public string? LogToFile => Get("logging", "file");
+
     private readonly IniData _data;
 
     public IniFile(string filepath)
@@ -64,5 +68,10 @@ public class IniFile
     {
         var value = Get(section, key);
         return value ?? defaultValue;
+    }
+    
+    private bool IsLoggingEnabled(string key) {
+        var value = Get("logging", key)?.ToLower();
+        return value != null && value != "false" && value != "off";
     }
 }
