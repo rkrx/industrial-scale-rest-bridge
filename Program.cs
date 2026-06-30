@@ -134,14 +134,17 @@ app.MapGet("/current-weight/kg", async (HttpContext context) =>
     try
     {
         var response = await requestChannel.Request(requestCode, 2500);
-        context.Response.Headers.Add("Content-Type", "application/json");
         return JsonConvert.SerializeObject(new { success = true, weight = response, unit = "kilogram" });
     }
-    catch (Exception e) 
+    catch (Exception e)
+    {
+        context.Response.StatusCode = 500;
+        return JsonConvert.SerializeObject(new { success = false, message = e.Message });
+    }
+    finally
     {
         context.Response.Headers.Add("Content-Type", "application/json");
-        context.Response.StatusCode = 500;
-        return JsonConvert.SerializeObject(new { success = false, message = e.Message, unit = "kilogram" });
+        context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
     }
 });
 
