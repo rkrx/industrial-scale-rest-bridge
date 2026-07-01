@@ -143,9 +143,9 @@ app.MapGet("/current-weight/kg", async (HttpContext context) =>
     }
     finally
     {
-        context.Response.Headers.Add("Content-Type", "application/json");
-        context.Response.Headers.Add("Access-Control-Allow-Private-Network", "true");
-        context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+        context.Response.Headers.Append("Content-Type", "application/json");
+        context.Response.Headers.Append("Access-Control-Allow-Private-Network", "true");
+        context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
     }
 });
 
