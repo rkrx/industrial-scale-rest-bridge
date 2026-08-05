@@ -3,7 +3,6 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
     [string] $ExecutablePath,
 
@@ -26,6 +25,14 @@ $ErrorActionPreference = "Stop"
 
 if (-not $IsWindows) {
     throw "The Windows service can only be installed on Windows."
+}
+
+if ([string]::IsNullOrWhiteSpace($ExecutablePath)) {
+    $ExecutablePath = Join-Path $PSScriptRoot "scale.exe"
+}
+
+if (-not (Test-Path -LiteralPath $ExecutablePath -PathType Leaf)) {
+    throw "Missing published executable: $ExecutablePath"
 }
 
 $resolvedExecutablePath = (Resolve-Path -LiteralPath $ExecutablePath).Path

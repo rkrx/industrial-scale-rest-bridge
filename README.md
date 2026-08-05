@@ -100,7 +100,7 @@ dotnet run
 dotnet publish -c Release -r win-x64 -o dist/windows --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-Trimming is deliberately disabled because not all dependencies used by this project guarantee trimming compatibility. Copy your `settings.ini` into `dist/windows` next to `scale.exe` before starting or installing the application.
+Trimming is deliberately disabled because not all dependencies used by this project guarantee trimming compatibility. The publish output includes the Windows service installation scripts. Copy your `settings.ini` into `dist/windows` next to `scale.exe` before starting or installing the application.
 
 ## Run as a Windows service
 
@@ -112,11 +112,13 @@ When running as a service, `settings.ini` is loaded from the directory containin
 
 1. Publish the application and put `settings.ini` next to the generated `scale.exe`.
 2. Open PowerShell 6.2 or later as Administrator.
-3. Run the installation script from the repository root:
+3. Run the published installation script:
 
 ```powershell
-.\scripts\install-windows-service.ps1 -ExecutablePath (Resolve-Path .\dist\windows\scale.exe).Path
+.\dist\windows\install-windows-service.ps1
 ```
+
+Without `-ExecutablePath`, the script uses the `scale.exe` located in its own directory. An explicit executable can still be selected with `-ExecutablePath C:\Path\To\scale.exe`.
 
 The service is installed as `IndustrialScaleRestBridge`, configured for automatic startup and started immediately. It is also configured to restart after a process failure. Use `-DoNotStart` if the service should only be registered. An existing service account can be selected with `-Credential (Get-Credential)`; that account must have the **Log on as a service** right.
 
@@ -142,7 +144,7 @@ Host-level warnings and errors can be inspected in the Windows Application event
 Open PowerShell as Administrator and run:
 
 ```powershell
-.\scripts\uninstall-windows-service.ps1
+.\dist\windows\uninstall-windows-service.ps1
 ```
 
 ## Usage

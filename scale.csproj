@@ -10,4 +10,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="scripts/install-windows-service.ps1" CopyToPublishDirectory="PreserveNewest" TargetPath="install-windows-service.ps1" />
+    <None Update="scripts/uninstall-windows-service.ps1" CopyToPublishDirectory="PreserveNewest" TargetPath="uninstall-windows-service.ps1" />
+  </ItemGroup>
 </Project>
