@@ -80,7 +80,7 @@ scale-response-eot = "\n"
 
 ## Project setup
 
-You have to install the .NET 8.0 SDK to build and run the server. You can download it from the [official website](https://dotnet.microsoft.com/download).
+You have to install the .NET 9.0 SDK to build and run the server. You can download it from the [official website](https://dotnet.microsoft.com/download).
 
 ### Restore dependencies
 
@@ -94,10 +94,55 @@ dotnet restore
 dotnet run
 ```
 
-### Make executable
+### Publish a standalone Windows executable
 
 ```bash
-dotnet publish -c Release -r win-x64 -o dist -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish -c Release -r win-x64 -o dist/windows --self-contained true -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+Trimming is deliberately disabled because not all dependencies used by this project guarantee trimming compatibility. Copy your `settings.ini` into `dist/windows` next to `scale.exe` before starting or installing the application.
+
+## Run as a Windows service
+
+The published application can optionally be registered as a native Windows service. The same executable continues to run as a normal console application when it is started directly. Windows service mode is activated automatically only when the executable is launched by the Windows Service Control Manager.
+
+When running as a service, `settings.ini` is loaded from the directory containing `scale.exe`. Relative paths in `[logging] file` are resolved against that directory as well. During normal console operation, both paths remain relative to the current project or working directory.
+
+### Install
+
+1. Publish the application and put `settings.ini` next to the generated `scale.exe`.
+2. Open PowerShell 6.2 or later as Administrator.
+3. Run the installation script from the repository root:
+
+```powershell
+.\scripts\install-windows-service.ps1 -ExecutablePath (Resolve-Path .\dist\windows\scale.exe).Path
+```
+
+The service is installed as `IndustrialScaleRestBridge`, configured for automatic startup and started immediately. It is also configured to restart after a process failure. Use `-DoNotStart` if the service should only be registered. An existing service account can be selected with `-Credential (Get-Credential)`; that account must have the **Log on as a service** right.
+
+The service account needs read and execute permission for the published directory, read access to `settings.ini`, access to the configured COM port, and write permission for the configured log directory. For a dedicated service account, an absolute log path below `C:\ProgramData\IndustrialScaleRestBridge` is recommended:
+
+```ini
+[logging]
+file = C:\ProgramData\IndustrialScaleRestBridge\requests.log
+```
+
+### Operate and verify
+
+```powershell
+Get-Service -Name IndustrialScaleRestBridge
+Invoke-RestMethod http://127.0.0.1:5000/current-weight/kg
+Restart-Service -Name IndustrialScaleRestBridge
+```
+
+Host-level warnings and errors can be inspected in the Windows Application event log. If the service listens on a non-loopback address, configure the Windows Firewall for the selected port separately.
+
+### Uninstall
+
+Open PowerShell as Administrator and run:
+
+```powershell
+.\scripts\uninstall-windows-service.ps1
 ```
 
 ## Usage

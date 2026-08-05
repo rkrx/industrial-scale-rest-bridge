@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO.Ports;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Newtonsoft.Json;
 using ScaleRESTService;
 using System.IO;
@@ -11,7 +12,21 @@ if (args.Any(arg => arg == "--list-comports"))
     return;
 }
 
-var ini = new IniFile("settings.ini");
+const string windowsServiceName = "IndustrialScaleRestBridge";
+
+var isWindowsService = WindowsServiceHelpers.IsWindowsService();
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = isWindowsService ? AppContext.BaseDirectory : null
+});
+
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = windowsServiceName;
+});
+
+var ini = new IniFile(Path.Combine(builder.Environment.ContentRootPath, "settings.ini"));
 
 if (!Parity.TryParse(ini.Parity, out Parity parity))
 {
@@ -70,12 +85,12 @@ FeedbackChannel<byte[], double> requestChannel = new (async input =>
 
 var requestCode = IoUtils.HexToByteArray(ini.RequestCodeHex);
 
-var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
 TextWriter? logWriter = null;
 if (ini.LogToFile != null) {
-    logWriter = new StreamWriter(ini.LogToFile, true);
+    var logFilePath = Path.GetFullPath(ini.LogToFile, builder.Environment.ContentRootPath);
+    logWriter = new StreamWriter(logFilePath, true);
 }
 
 // Middleware to log requests and responses

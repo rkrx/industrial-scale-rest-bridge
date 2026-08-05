@@ -10,3 +10,5 @@
 !/README.md
 !/scale.csproj
 !/settings.*.ini
+!/scripts/
+!/scripts/*.ps1
