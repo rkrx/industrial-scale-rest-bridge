@@ -111,10 +111,18 @@ When running as a service, `settings.ini` is loaded from the directory containin
 ### Install
 
 1. Publish the application and put `settings.ini` next to the generated `scale.exe`.
-2. Open PowerShell 6.2 or later as Administrator.
+2. Open Windows PowerShell 5.1 or later as Administrator.
 3. Run the published installation script:
 
 ```powershell
+.\dist\windows\install-windows-service.ps1
+```
+
+If script execution is disabled on the system, allow the published script for the current PowerShell session only:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
+Unblock-File .\dist\windows\install-windows-service.ps1
 .\dist\windows\install-windows-service.ps1
 ```
 
