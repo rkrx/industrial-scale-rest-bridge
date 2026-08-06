@@ -10,6 +10,36 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Wait-ServiceStatus {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Name,
+
+        [Parameter(Mandatory)]
+        [System.ServiceProcess.ServiceControllerStatus] $Status,
+
+        [int] $TimeoutSeconds = 30
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    do {
+        $currentService = Get-Service -Name $Name -ErrorAction Stop
+        try {
+            if ($currentService.Status -eq $Status) {
+                return
+            }
+        }
+        finally {
+            $currentService.Dispose()
+        }
+
+        Start-Sleep -Milliseconds 250
+    } while ([DateTime]::UtcNow -lt $deadline)
+
+    throw "Service '$Name' did not reach status '$Status' within $TimeoutSeconds seconds."
+}
+
 if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) {
     throw "The Windows service can only be removed on Windows."
 }
@@ -20,12 +50,12 @@ if ($null -eq $service) {
     return
 }
 
-if ($service.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
+$serviceStatus = $service.Status
+$service.Dispose()
+
+if ($serviceStatus -ne [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
     Stop-Service -Name $ServiceName -Force
-    $service.WaitForStatus(
-        [System.ServiceProcess.ServiceControllerStatus]::Stopped,
-        [TimeSpan]::FromSeconds(30)
-    )
+    Wait-ServiceStatus -Name $ServiceName -Status Stopped
 }
 
 & sc.exe delete $ServiceName | Out-Null

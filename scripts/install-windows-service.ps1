@@ -23,6 +23,36 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Wait-ServiceStatus {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Name,
+
+        [Parameter(Mandatory)]
+        [System.ServiceProcess.ServiceControllerStatus] $Status,
+
+        [int] $TimeoutSeconds = 30
+    )
+
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    do {
+        $currentService = Get-Service -Name $Name -ErrorAction Stop
+        try {
+            if ($currentService.Status -eq $Status) {
+                return
+            }
+        }
+        finally {
+            $currentService.Dispose()
+        }
+
+        Start-Sleep -Milliseconds 250
+    } while ([DateTime]::UtcNow -lt $deadline)
+
+    throw "Service '$Name' did not reach status '$Status' within $TimeoutSeconds seconds."
+}
+
 if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) {
     throw "The Windows service can only be installed on Windows."
 }
@@ -65,7 +95,7 @@ if ($null -ne $Credential) {
 $serviceCreated = $false
 
 try {
-    $service = New-Service @newServiceArguments
+    New-Service @newServiceArguments | Out-Null
     $serviceCreated = $true
 
     & sc.exe failure $ServiceName "reset=" "86400" "actions=" "restart/60000/restart/60000/restart/60000" | Out-Null
@@ -75,10 +105,7 @@ try {
 
     if (-not $DoNotStart) {
         Start-Service -Name $ServiceName
-        $service.WaitForStatus(
-            [System.ServiceProcess.ServiceControllerStatus]::Running,
-            [TimeSpan]::FromSeconds(30)
-        )
+        Wait-ServiceStatus -Name $ServiceName -Status Running
     }
 }
 catch {
