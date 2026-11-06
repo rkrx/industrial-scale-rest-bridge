@@ -12,3 +12,9 @@
 !/settings.*.ini
 !/scripts/
 !/scripts/*.ps1
+!/installer/
+!/installer/**
+!/tests/
+!/tests/**
+!/docs/
+!/docs/**

@@ -17,7 +17,9 @@ param(
 
     [PSCredential] $Credential,
 
-    [switch] $DoNotStart
+    [switch] $DoNotStart,
+
+    [switch] $UpdateExisting
 )
 
 Set-StrictMode -Version Latest
@@ -76,8 +78,21 @@ if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) {
     throw "Missing configuration file: $settingsPath"
 }
 
-if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
-    throw "A service named '$ServiceName' is already installed."
+$existingService = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+if ($null -ne $existingService) {
+    $existingService.Dispose()
+    if (-not $UpdateExisting) {
+        throw "A service named '$ServiceName' is already installed."
+    }
+    if ($null -ne $Credential) {
+        throw 'Updating an existing service preserves its account; do not specify Credential.'
+    }
+    $imagePath = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName" -Name ImagePath).ImagePath
+    if ($imagePath -ine ('"{0}"' -f $resolvedExecutablePath)) {
+        throw "Service '$ServiceName' points to a different executable. Refusing to modify it."
+    }
+    Stop-Service -Name $ServiceName
+    Wait-ServiceStatus -Name $ServiceName -Status Stopped
 }
 
 $newServiceArguments = @{
@@ -95,8 +110,14 @@ if ($null -ne $Credential) {
 $serviceCreated = $false
 
 try {
-    New-Service @newServiceArguments | Out-Null
-    $serviceCreated = $true
+    if ($null -eq $existingService) {
+        New-Service @newServiceArguments | Out-Null
+        $serviceCreated = $true
+    }
+    else {
+        # Keep the existing logon account and its credentials during upgrades.
+        Set-Service -Name $ServiceName -StartupType Automatic
+    }
 
     & sc.exe failure $ServiceName "reset=" "86400" "actions=" "restart/60000/restart/60000/restart/60000" | Out-Null
     if ($LASTEXITCODE -ne 0) {

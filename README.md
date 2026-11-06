@@ -102,6 +102,127 @@ dotnet publish -c Release -r win-x64 -o dist/windows --self-contained true -p:Pu
 
 Trimming is deliberately disabled because not all dependencies used by this project guarantee trimming compatibility. The publish output includes the Windows service installation scripts. Copy your `settings.ini` into `dist/windows` next to `scale.exe` before starting or installing the application.
 
+## Graphical Windows installer
+
+The [Inno Setup installer](installer/windows/industrial-scale-rest-bridge.iss)
+packages the standalone Windows application, configuration import and native
+service registration in one offline setup EXE. The wizard is in German and
+requires administrator rights. Target: Windows 10 or later, x64-compatible.
+The target machine does not need a separately installed .NET runtime.
+
+### Build the installer on Windows
+
+Install a .NET SDK capable of targeting .NET 9 and
+[Inno Setup 6.4 or later](https://jrsoftware.org/isdl.php), then run in PowerShell:
+
+```powershell
+.\scripts\build-installer.ps1 -Version 1.0.0
+```
+
+The script publishes into a fresh temporary directory, compiles the installer
+and removes its staging files. The result is:
+
+```text
+dist\installers\IndustrialScaleRestBridge-1.0.0-win-x64-setup.exe
+```
+
+If the compiler is in a custom location, supply
+`-IsccPath 'C:\Tools\Inno Setup 6\ISCC.exe'`. No tools are downloaded or installed
+by the build script. The generated setup is unsigned; signing can be added to
+the release process separately. Inno Setup requests commercial users to buy
+a license, but its [FAQ](https://jrsoftware.org/isorder.php#required) states
+that purchase is not mandatory.
+
+### Install and configure
+
+1. Run the generated setup EXE and choose the installation directory, by default
+   `C:\Program Files\IndustrialScaleRestBridge`.
+2. Select an existing INI template using the file picker or enter its path.
+   Network files are supported. If an elevated setup cannot see a mapped drive,
+   use a UNC path such as `\\server\share\scale.ini` and ensure the setup account
+   can read that share.
+3. Optionally choose a detected COM port or type one manually. **Aktualisieren**
+   refreshes the list using the application's existing `--list-comports` command.
+   Leave the field empty to retain the template's port. Port discovery failure
+   does not prevent manual entry. Listing ports does not test scale connectivity.
+4. Setup copies the template locally as `settings.ini`, applies only the optional
+   `[scale] com-port` override, and installs/starts `IndustrialScaleRestBridge`
+   with automatic startup and restart-on-failure recovery. The source template
+   is never written or deleted; the service needs no access to the share later.
+
+Use UTF-8 or BOM-marked UTF-16 INI templates. The template must have exactly one
+`[scale]` section and one non-empty `com-port`, unless a missing port is supplied
+in setup. Without an override the template is copied byte-for-byte. With an
+override the local copy is written as UTF-8, retaining other settings, comments
+and line endings. Other configuration requirements remain those described above.
+
+The initial service account is LocalSystem. The template controls listening
+address, logging and test mode; setup does not change those values or open
+firewall ports. In particular, a template with `test-mode=true` keeps test mode
+enabled. For file logging prefer an absolute path under
+`C:\ProgramData\IndustrialScaleRestBridge`; provision the log directory and
+grant the service account write access before installation.
+
+Running setup again supports updates in the same directory. The installed local
+INI is offered as the default template, so no network access is needed for an
+ordinary update. Existing service credentials are retained. A same-name service
+pointing at a different executable is rejected before its process or files are
+changed. Configuration staging occurs before stopping a running service.
+
+### Silent installation
+
+The same wizard also accepts explicit inputs for automated deployment:
+
+```powershell
+.\IndustrialScaleRestBridge-1.0.0-win-x64-setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CONFIG="\\server\share\scale.ini" /COMPORT=COM3 /LOG="C:\Temp\scale-setup.log"
+```
+
+`/CONFIG` is required for a new installation; updates can default to the installed
+INI. `/COMPORT` is optional. Standard Inno Setup arguments such as `/DIR` are
+also supported. A configuration or service failure must be treated as a failed
+installation, not ignored by deployment automation. For scripts that must wait
+for completion and inspect its exit code, use `Start-Process -Wait -PassThru`.
+
+### Uninstall and failure handling
+
+Remove **Industrial Scale REST Bridge** through Windows Settings → Apps.
+The uninstaller first stops the matching service and waits for SCM to confirm
+its deletion. Only then does it remove the installed application and local INI.
+If stopping/deleting the service fails, uninstall aborts and leaves program files
+in place; close service-management tools holding handles open and retry.
+Unrelated files or user-created logs are not recursively deleted.
+
+Setup checks service command exit codes. On an interrupted or failed setup it
+attempts to remove a newly created service, restore a previous local INI, and
+restart a previously running service. This is best-effort recovery, not a
+transactional application rollback; inspect the setup log and repair/re-run setup
+after a failed update. A service-start failure produces a failure screen and
+nonzero setup exit code; installed files and their uninstaller remain available
+for repair/removal. Setup/uninstall logging is enabled by default.
+
+### Installer checks
+
+Configuration import tests run on PowerShell 5.1+ without Windows service access:
+
+```powershell
+pwsh -NoProfile -File tests/installer/test-settings.ps1
+```
+
+On a **disposable Windows test machine**, open an elevated PowerShell and run:
+
+```powershell
+.\tests\installer\test-windows-installer.ps1 -InstallerPath .\dist\installers\IndustrialScaleRestBridge-1.0.0-win-x64-setup.exe -AllowServiceChanges
+```
+
+This integration check refuses to touch an existing bridge service. It exercises
+invalid configuration, service-start failure with nonzero setup exit, silent installation, local COM override, unchanged source,
+REST response in test mode, update with retained local INI/account, service path
+protection and uninstall. Artifacts and failures are retained for inspection.
+Additionally check the graphical file picker, editable port list/refresh and an
+accessible network share on Windows; the automated test uses a local template.
+Native installer compilation and SCM behavior cannot be verified by running the
+configuration tests or cross-publishing the executable on macOS.
+
 ## Run as a Windows service
 
 The published application can optionally be registered as a native Windows service. The same executable continues to run as a normal console application when it is started directly. Windows service mode is activated automatically only when the executable is launched by the Windows Service Control Manager.
@@ -130,6 +251,11 @@ Without `-ExecutablePath`, the script uses the `scale.exe` located in its own di
 
 The service is installed as `IndustrialScaleRestBridge`, configured for automatic startup and started immediately. It is also configured to restart after a process failure. Use `-DoNotStart` if the service should only be registered. An existing service account can be selected with `-Credential (Get-Credential)`; that account must have the **Log on as a service** right.
 
+For an update in the same directory, `-UpdateExisting` retains the existing
+service account and restarts the service using the replaced executable. It
+rejects a same-name service registered for another executable. Stop the service
+before replacing its files; the graphical installer performs this sequencing.
+
 The service account needs read and execute permission for the published directory, read access to `settings.ini`, access to the configured COM port, and write permission for the configured log directory. For a dedicated service account, an absolute log path below `C:\ProgramData\IndustrialScaleRestBridge` is recommended:
 
 ```ini
@@ -154,6 +280,11 @@ Open PowerShell as Administrator and run:
 ```powershell
 .\dist\windows\uninstall-windows-service.ps1
 ```
+
+This standalone script removes only the service, not application files. It also
+supports `-StopOnly` and an optional `-ExpectedExecutablePath` guard, used by the
+graphical installer. Removal waits until SCM confirms the service no longer
+exists, rather than treating a service marked for deletion as already removed.
 
 ## Usage
 
