@@ -45,7 +45,7 @@ capabilities are unnecessary after the Windows-only decision.
 | --- | --- | --- | --- | --- |
 | CFG | Read-only source import, local INI staging, optional port override | `prepare-settings.ps1 -TemplatePath -DestinationPath [-ComPort]`; exit 0 or failure | PowerShell 5.1+ | CFG.M01 |
 | SVC | Safe native service install/update/stop/removal | Existing scripts plus `-UpdateExisting`, `-StopOnly`, `-ExpectedExecutablePath` | Windows SCM, existing published exe | SVC.M01 |
-| SET | German wizard, packaging, setup/uninstall sequencing | `build-installer.ps1 [-Version] [-IsccPath]`; setup `/CONFIG=... [/COMPORT=...]` | CFG, SVC, .NET SDK, Inno Setup 6.4+ | SET.M01 |
+| SET | German wizard, packaging, setup/uninstall sequencing and hosted build | `build-installer.ps1 [-Version] [-IsccPath]`; setup `/CONFIG=... [/COMPORT=...]`; Actions manual `version` input | CFG, SVC, .NET SDK, Inno Setup 6.4+, GitHub-hosted Windows runner for CI | SET.M01, SET.M02 |
 
 CFG.M01 is locally verified. SVC.M01 and SET.M01 are implemented with native
 Windows acceptance outstanding. See the implementation plan for commands,
@@ -54,3 +54,21 @@ evidence and the distinction between code completion and platform acceptance.
 Each milestone is a bounded approximately 2–3-hour professional work package.
 Their status, acceptance and evidence are tracked in the implementation plan;
 writing these documents does not count as implementation or Windows proof.
+
+## Extension: GitHub Actions build (SET.M02)
+
+Requested on 2026-11-06 after installer commit `136cf2c`. Reuse the existing
+build script on GitHub's disposable `windows-2022` image, whose preinstalled
+Inno Setup satisfies the compiler requirement. This is an explicit extension
+to the initial local-build scope, not a new target-machine dependency.
+
+A manual workflow accepts the numeric version, runs the configuration checks
+under Windows PowerShell 5.1, builds the EXE, and runs the existing native
+installation/service/REST/update/uninstall tests. Only successful builds/tests
+produce the downloadable installer artifact (14-day retention). Diagnostic
+logs are retained for 7 days, including on failure. Use official GitHub actions
+pinned to commit SHAs, read-only repository permissions and no custom secrets.
+No Release publishing or signing. Initial workflow commit/push/merge and actual
+Actions execution remain separate actions requiring authorization; a prepared
+workflow does not establish native acceptance. Existing milestone identifiers,
+scope and outstanding GUI/share/hardware checks remain unchanged.

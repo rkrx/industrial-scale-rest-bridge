@@ -77,6 +77,26 @@ Consumes CFG/SVC and published win-x64 files; produces an offline setup EXE.
   cross-publish; review all changes.
 - [ ] Compile/run the installer on Windows and record native acceptance.
 
+## SET.M02 — GitHub-hosted installer build (2–3 hours)
+
+Extension requested after commit `136cf2c`; depends on CFG.M01, SVC.M01 and
+SET.M01's existing scripts. This milestone automates the outstanding native
+build/service checks without counting them as passed until an actual run.
+
+Files: `.github/workflows/windows-installer.yml`, `.gitignore`, `README.md` and
+the existing module overview/plan. No changes to installer or application code.
+
+Consumes the manually selected repository ref and numeric `version` input;
+produces a tested setup EXE in an Actions artifact, plus diagnostic logs.
+
+- [x] Check official runner/action documentation and pin official action commits.
+- [x] Add manual Windows job reusing `scripts/build-installer.ps1`, with Windows
+  PowerShell 5.1 configuration tests and native installer integration tests.
+- [x] Upload the EXE only after successful tests; upload diagnostics on failure.
+- [x] Document startup/default-branch requirements, download and artifact retention.
+- [x] Validate workflow syntax and embedded PowerShell; run local config checks.
+- [ ] After authorized publishing, run Actions and record compiler/native results.
+
 ## Evidence / status
 
 - Baseline: clean checkout; existing native Windows service integration and
@@ -98,4 +118,10 @@ Consumes CFG/SVC and published win-x64 files; produces an offline setup EXE.
 - Read-only independent review identified Inno's swallowed postinstall exceptions.
   Fixed by explicit failure state, failure finish text and nonzero custom exit;
   native fresh/upgrade failure scenarios are included in the integration test.
-- No commits, publishing or installation on a target machine performed.
+- Initial installer implementation committed as `136cf2c` at the user's request.
+  No publishing or installation on a target machine performed.
+- SET.M02 workflow implemented locally; native execution remains outstanding.
+- SET.M02 local checks: actionlint 1.7.12 passed, all three embedded PowerShell
+  scripts parsed, and all 11 configuration tests passed. Independent review found
+  a potentially mismatched diagnostic path; setting integration-step TEMP/TMP to
+  `runner.temp` makes the upload path deterministic. No Actions run performed.

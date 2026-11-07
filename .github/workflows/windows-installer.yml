@@ -1,0 +1,68 @@
+name: Build Windows installer
+run-name: Windows installer ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Installer version (for example 1.0.0)
+        required: true
+        default: '1.0.0'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: powershell
+    env:
+      INSTALLER_VERSION: ${{ inputs.version }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Test configuration import on Windows PowerShell 5.1
+        run: .\tests\installer\test-settings.ps1
+
+      - name: Build standalone application and Inno Setup installer
+        run: .\scripts\build-installer.ps1 -Version $env:INSTALLER_VERSION
+
+      - name: Test installation, service, REST endpoint, upgrade and uninstall
+        env:
+          # Keep GetTempPath() test artifacts inside the directory uploaded below.
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+        run: |
+          $installer = Join-Path $PWD "dist/installers/IndustrialScaleRestBridge-$env:INSTALLER_VERSION-win-x64-setup.exe"
+          .\tests\installer\test-windows-installer.ps1 -InstallerPath $installer -AllowServiceChanges
+
+      - name: Upload tested installer
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: IndustrialScaleRestBridge-${{ inputs.version }}-win-x64
+          path: dist/installers/IndustrialScaleRestBridge-${{ inputs.version }}-win-x64-setup.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Upload integration logs
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: windows-installer-test-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scale-installer-test-*/*.log
+          if-no-files-found: ignore
+          retention-days: 7

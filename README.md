@@ -133,6 +133,34 @@ the release process separately. Inno Setup requests commercial users to buy
 a license, but its [FAQ](https://jrsoftware.org/isorder.php#required) states
 that purchase is not mandatory.
 
+### Build with GitHub Actions
+
+The [Build Windows installer workflow](.github/workflows/windows-installer.yml)
+builds and tests the setup on a disposable GitHub-hosted `windows-2022` VM.
+It uses the existing build script and Inno Setup already installed on that
+runner, without a self-hosted runner or a separate installer action.
+
+Once this workflow is pushed and present on the repository's default branch:
+
+1. Open **Actions → Build Windows installer → Run workflow**.
+2. Select the branch/tag to build and enter a numeric installer version, such
+   as `1.0.0`.
+3. After a successful run, download the artifact named
+   `IndustrialScaleRestBridge-1.0.0-win-x64` from the run's **Artifacts** section.
+   The ZIP contains `IndustrialScaleRestBridge-1.0.0-win-x64-setup.exe`.
+
+Before publishing the installer artifact, the job runs configuration tests on
+Windows PowerShell 5.1 and exercises installation, native service startup,
+REST test mode, successful/failed updates and uninstall. A failing test blocks
+the installer upload. Integration logs are uploaded even if a later step fails.
+Installer artifacts are retained for 14 days; test logs for 7 days.
+
+The workflow is manual only, uses read-only repository permissions, and requires
+no custom secrets. It uploads an Actions artifact, not a GitHub Release; the
+EXE remains unsigned. Its service tests use synthetic local configuration and
+test mode, so network-share access, the graphical wizard and real scale hardware
+still need manual acceptance. No workflow has been run merely by adding this file.
+
 ### Install and configure
 
 1. Run the generated setup EXE and choose the installation directory, by default
