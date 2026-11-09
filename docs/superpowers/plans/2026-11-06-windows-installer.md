@@ -125,3 +125,8 @@ produces a tested setup EXE in an Actions artifact, plus diagnostic logs.
   scripts parsed, and all 11 configuration tests passed. Independent review found
   a potentially mismatched diagnostic path; setting integration-step TEMP/TMP to
   `runner.temp` makes the upload path deterministic. No Actions run performed.
+- 2026-11-09: User supplied the first native Actions compiler result: .NET
+  publishing succeeded; Inno Setup 6.7.1 failed preprocessing at line 269 because
+  the Pascal `#13#10` literal began a line and was parsed as a directive. Moved
+  the unchanged literal to the preceding line. Fix is local; native compilation
+  and subsequent integration acceptance still require another Actions run.

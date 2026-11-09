@@ -265,8 +265,8 @@ begin
   if ServiceInstallFailed then begin
     Log('Dienstinstallation fehlgeschlagen: ' + Detail);
     SuppressibleMsgBox('Der Windows-Dienst konnte nicht gestartet werden. ' +
-      'Die Installation ist fehlgeschlagen. Bitte prüfen Sie Konfiguration und Setup-Protokoll.' +
-      #13#10 + Detail, mbError, MB_OK, IDOK);
+      'Die Installation ist fehlgeschlagen. Bitte prüfen Sie Konfiguration und Setup-Protokoll.' + #13#10 +
+      Detail, mbError, MB_OK, IDOK);
   end;
 end;
 
