@@ -140,14 +140,21 @@ builds and tests the setup on a disposable GitHub-hosted `windows-2022` VM.
 It uses the existing build script and Inno Setup already installed on that
 runner, without a self-hosted runner or a separate installer action.
 
-Once this workflow is pushed and present on the repository's default branch:
+Every push to `main` starts the workflow. Its version is automatically
+`1.0.<github.run_number>`, for example `1.0.42`. The same version is used for the
+application, installer filename, Actions artifact and release tag `v1.0.42`.
+Failed runs can leave gaps in these numbers. Re-running a job retains its number.
 
-1. Open **Actions → Build Windows installer → Run workflow**.
-2. Select the branch/tag to build and enter a numeric installer version, such
-   as `1.0.0`.
-3. After a successful run, download the artifact named
-   `IndustrialScaleRestBridge-1.0.0-win-x64` from the run's **Artifacts** section.
-   The ZIP contains `IndustrialScaleRestBridge-1.0.0-win-x64-setup.exe`.
+After a successful build and tests, open the repository's **Releases** page to
+download `IndustrialScaleRestBridge-1.0.42-win-x64-setup.exe` directly from its
+release. The release/tag targets the exact commit built by that run. Release
+downloads do not use the Actions artifact retention period.
+
+You can also use **Actions → Build Windows installer → Run workflow** and select
+a branch/tag. Manual runs receive an automatic version too. Only runs on `main`
+publish releases; other refs produce tested Actions artifacts without publishing.
+The run's **Artifacts** section still offers the ZIP named
+`IndustrialScaleRestBridge-1.0.42-win-x64`, containing the setup EXE.
 
 Before publishing the installer artifact, the job runs configuration tests on
 Windows PowerShell 5.1 and exercises installation, native service startup,
@@ -155,11 +162,20 @@ REST test mode, successful/failed updates and uninstall. A failing test blocks
 the installer upload. Integration logs are uploaded even if a later step fails.
 Installer artifacts are retained for 14 days; test logs for 7 days.
 
-The workflow is manual only, uses read-only repository permissions, and requires
-no custom secrets. It uploads an Actions artifact, not a GitHub Release; the
-EXE remains unsigned. Its service tests use synthetic local configuration and
+Build/tests retain read-only repository permissions. A separate release job
+downloads the tested artifact from that run with `actions: read` and publishes
+using `contents: write` and GitHub's automatically supplied `GITHUB_TOKEN`.
+No personal access token, custom secret or additional server is needed under
+standard repository policy. The publisher first creates the tag at the built
+commit and fails if that tag already exists. Existing tags/releases/assets are
+never overwritten. Re-running a published run, or one whose tag was created
+before a publication failure, fails instead of replacing that version. Fixing a
+failed build and pushing again creates a new run/version.
+
+The EXE remains unsigned. Service tests use synthetic local configuration and
 test mode, so network-share access, the graphical wizard and real scale hardware
-still need manual acceptance. No workflow has been run merely by adding this file.
+still need manual acceptance. Adding the workflow locally does not execute it;
+its first successful Actions run is the evidence for native build/release acceptance.
 
 ### Install and configure
 

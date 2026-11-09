@@ -45,7 +45,7 @@ capabilities are unnecessary after the Windows-only decision.
 | --- | --- | --- | --- | --- |
 | CFG | Read-only source import, local INI staging, optional port override | `prepare-settings.ps1 -TemplatePath -DestinationPath [-ComPort]`; exit 0 or failure | PowerShell 5.1+ | CFG.M01 |
 | SVC | Safe native service install/update/stop/removal | Existing scripts plus `-UpdateExisting`, `-StopOnly`, `-ExpectedExecutablePath` | Windows SCM, existing published exe | SVC.M01 |
-| SET | German wizard, packaging, setup/uninstall sequencing and hosted build | `build-installer.ps1 [-Version] [-IsccPath]`; setup `/CONFIG=... [/COMPORT=...]`; Actions manual `version` input | CFG, SVC, .NET SDK, Inno Setup 6.4+, GitHub-hosted Windows runner for CI | SET.M01, SET.M02 |
+| SET | German wizard, packaging, setup/uninstall sequencing, hosted build and releases | `build-installer.ps1 [-Version] [-IsccPath]`; setup `/CONFIG=... [/COMPORT=...]`; Actions version `1.0.<run_number>`, release `v<version>` | CFG, SVC, .NET SDK, Inno Setup 6.4+, GitHub-hosted runners and GitHub CLI | SET.M01, SET.M02, SET.M03 |
 
 CFG.M01 is locally verified. SVC.M01 and SET.M01 are implemented with native
 Windows acceptance outstanding. See the implementation plan for commands,
@@ -72,3 +72,28 @@ No Release publishing or signing. Initial workflow commit/push/merge and actual
 Actions execution remain separate actions requiring authorization; a prepared
 workflow does not establish native acceptance. Existing milestone identifiers,
 scope and outstanding GUI/share/hardware checks remain unchanged.
+
+## Extension: automatic versioned releases (SET.M03)
+
+Approved on 2026-11-09: every push to `main` builds/tests the installer and then
+publishes it under GitHub Releases with automatic `1.0.<github.run_number>`
+versions. Manual dispatch remains, with automatic versions too; non-main manual
+refs only build artifacts. SET.M03 supersedes SET.M02's manual-version input,
+manual-only trigger and no-release restriction; all build/test and acceptance
+requirements remain intact.
+
+Keep the build job read-only. A dependent Ubuntu release job receives only
+`actions: read` (download this run's tested artifact) and `contents: write`
+(create tag/release and attach EXE). Reuse the standard GitHub CLI and automatic
+`GITHUB_TOKEN`; no custom secret, service or release action is introduced.
+Create the tag from the exact `GITHUB_SHA` using an atomic create-reference API
+call that fails on an existing tag, then publish with `--verify-tag` and generate
+release notes. Do not overwrite existing tags, releases or assets. Retrying a
+run whose tag was already created retains its version and fails creation rather
+than replacing it; a new push has a new number.
+Numbers may have gaps from failed/manual runs, and the existing installer guard
+rejects version components above 65535. No release is created if build/tests fail.
+
+Status: local implementation; lint/review and first remote acceptance are tracked
+in the plan. Publishing repository changes and an actual successful Actions run
+are separate from source preparation.

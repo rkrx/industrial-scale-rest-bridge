@@ -97,6 +97,24 @@ produces a tested setup EXE in an Actions artifact, plus diagnostic logs.
 - [x] Validate workflow syntax and embedded PowerShell; run local config checks.
 - [ ] After authorized publishing, run Actions and record compiler/native results.
 
+## SET.M03 — Automatic versions and GitHub Releases (2–3 hours)
+
+Approved 2026-11-09; depends on SET.M02's successful build/test artifact.
+Supersedes only its manual-only trigger, caller-supplied version and no-release
+restriction. CFG/SVC and all prior acceptance checks keep their identifiers.
+
+Files: `.github/workflows/windows-installer.yml`, `README.md`, existing spec/plan.
+Consumes push/main or manual dispatch and `github.run_number`; produces
+`1.0.<run_number>` installers and `v<version>` release downloads for main runs.
+
+- [x] Reuse workflow/build-script version interface; no new version service/file.
+- [x] Add push/main trigger and automatic version shared by both jobs/artifact.
+- [x] Keep manual builds; restrict publication to main and successful build/tests.
+- [x] Add dependent publisher with minimal token permissions and exact commit tag.
+- [x] Document download, permissions, number gaps and non-overwriting retry behavior.
+- [x] Run actionlint, parse embedded PowerShell/Bash, review publication contracts.
+- [ ] Record a successful real Actions build/test/release after authorized push.
+
 ## Evidence / status
 
 - Baseline: clean checkout; existing native Windows service integration and
@@ -130,3 +148,9 @@ produces a tested setup EXE in an Actions artifact, plus diagnostic logs.
   the Pascal `#13#10` literal began a line and was parsed as a directive. Moved
   the unchanged literal to the preceding line. Fix is local; native compilation
   and subsequent integration acceptance still require another Actions run.
+- SET.M03 local verification: actionlint 1.7.12, both Bash scripts and all three
+  embedded PowerShell scripts passed syntax checks. Independent review identified
+  that `gh release create --target` alone does not validate a preexisting tag;
+  fixed by atomic reference creation at `GITHUB_SHA` followed by `--verify-tag`.
+  Reviewer confirmed the fix with no new blocker. Source changes remain local;
+  actual push-triggered build, native tests and release publication are unverified.
